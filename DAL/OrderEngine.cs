@@ -2,15 +2,25 @@
 using System.Collections.Generic;
 using System.Data;
 using DTO;
+using DTO.Enums;
 
 namespace DAL
 {
     public class OrderEngine : IOrderEngine
     {
+        private readonly string connectionString;
+        private readonly string provider;
+
+        public OrderEngine(string connectionString, string provider)
+        {
+            this.connectionString = connectionString;
+            this.provider = provider;
+        }
+
         public IList<Order> GetOrders()
         {
             var orders = new List<Order>();
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -36,7 +46,7 @@ namespace DAL
         public List<OrderDetailedInfo> GetOrderDetailedInformation(int orderId)
         {
             var orderInfos = new List<OrderDetailedInfo>();
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -83,7 +93,7 @@ namespace DAL
 
         public int CreateOrder(Order order)
         {
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -132,7 +142,7 @@ namespace DAL
 
         public Order GetOrder(int orderId)
         {
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -196,14 +206,15 @@ namespace DAL
                 throw new WrongOrderStatusException(OrderStatus.New);
             }
 
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
                 command.CommandType = CommandType.Text;
                 command.CommandText = "update Orders " +
                     "set " +
-                    "CustomerID = @customerId, EmployeeID = @employeeId, RequiredDate = @requiredDate, " +
+                    "CustomerID = @customerId, EmployeeID = @employeeId, OrderDate = @orderDate," +
+                    "RequiredDate = @requiredDate, ShippedDate = @shippedDate, " +
                     "ShipVia = @shipVia, Freight = @freight, ShipName = @shipName, " +
                     "ShipAddress = @shipAddress, ShipCity = @shipCity, ShipRegion = @shipRegion, " +
                     "ShipPostalCode = @shipPostalCode, ShipCountry = @shipCountry " +
@@ -211,7 +222,9 @@ namespace DAL
                 CreateParameter("@orderId", DbType.Int32, orderId, command);
                 CreateParameter("@customerId", DbType.AnsiStringFixedLength, editedOrder.CustomerId, command);
                 CreateParameter("@employeeId", DbType.Int32, editedOrder.EmployeeId, command);
+                CreateParameter("@orderDate", DbType.DateTime, editedOrder.OrderDate, command);
                 CreateParameter("@requiredDate", DbType.DateTime, editedOrder.RequiredDate, command);
+                CreateParameter("@shippedDate", DbType.DateTime, editedOrder.ShippedDate, command);
                 CreateParameter("@shipVia", DbType.Int32, editedOrder.ShipVia, command);
                 CreateParameter("@freight", DbType.Currency, editedOrder.Freight, command);
                 CreateParameter("@shipName", DbType.AnsiString, editedOrder.ShipName, command);
@@ -227,12 +240,12 @@ namespace DAL
         public void DeleteOrder(int orderId)
         {
             var order = GetOrder(orderId);
-            if (order.Status == OrderStatus.New)
+            if (order.Status == OrderStatus.Delivered)
             {
                 throw new WrongOrderStatusException();
             }
 
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -245,7 +258,7 @@ namespace DAL
 
         public int GetNextOrderId()
         {
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -262,7 +275,7 @@ namespace DAL
 
         public List<OrderHistoryElement> GetCustomerOrderHistory(string customerId)
         {
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();
@@ -284,7 +297,7 @@ namespace DAL
 
         public List<OrderDetailElement> GetCustomerOrderDetail(int orderId)
         {
-            using (var connection = DataFactory.CreateConnection())
+            using (var connection = DataFactory.CreateConnection(connectionString, provider))
             {
                 connection.Open();
                 var command = connection.CreateCommand();

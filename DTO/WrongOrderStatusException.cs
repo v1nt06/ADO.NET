@@ -1,4 +1,5 @@
 using System;
+using DTO.Enums;
 
 namespace DTO
 {

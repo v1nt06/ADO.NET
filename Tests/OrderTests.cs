@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using DAL;
 using DTO;
+using DTO.Enums;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tests
@@ -10,15 +12,21 @@ namespace Tests
     [TestClass]
     public sealed class OrderTests
     {
+        private static readonly string ConnectionString =
+            ConfigurationManager.ConnectionStrings["NorthwindConnection"].ConnectionString;
+
+        private static readonly string Provider =
+            ConfigurationManager.ConnectionStrings["NorthwindConnection"].ProviderName;
+
         [TestMethod]
         public void GetOrders()
         {
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var actualOrders = orderEngine.GetOrders();
 
             var expectedOrders = new List<Order>();
 
-            var connection = DataFactory.CreateConnection();
+            var connection = DataFactory.CreateConnection(ConnectionString, Provider);
             using (connection)
             {
                 connection.Open();
@@ -54,7 +62,7 @@ namespace Tests
         [TestMethod]
         public void GetOrderDetailedInfo()
         {
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var actualInfo = orderEngine.GetOrderDetailedInformation(10248);
 
             var expectedInfo = new List<OrderDetailedInfo>
@@ -70,7 +78,7 @@ namespace Tests
         [TestMethod]
         public void CreateOrder()
         {
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
 
             var order = new Order
             {
@@ -98,7 +106,7 @@ namespace Tests
         public void EditNewOrder()
         {
             var order = new Order();
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var newOrderId = orderEngine.CreateOrder(order);
 
             order.CustomerId = "VINET";
@@ -124,7 +132,7 @@ namespace Tests
         {
             var order = new Order();
             order.StartProcessing(DateTime.Today);
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var orderId = orderEngine.CreateOrder(order);
             orderEngine.EditOrder(orderId, order);
         }
@@ -134,7 +142,7 @@ namespace Tests
         {
             var order = new Order();
             order.StartProcessing(DateTime.Today);
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var orderId = orderEngine.CreateOrder(order);
             orderEngine.DeleteOrder(orderId);
             Assert.IsNull(orderEngine.GetOrder(orderId));
@@ -142,11 +150,14 @@ namespace Tests
 
         [TestMethod]
         [ExpectedException(typeof(WrongOrderStatusException))]
-        public void DeleteNewOrder()
+        public void DeleteDeliveredOrder()
         {
             var order = new Order();
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var newOrderId = orderEngine.CreateOrder(order);
+            order.StartProcessing(DateTime.Today);
+            order.Deliver(DateTime.Today + TimeSpan.FromDays(1));
+            orderEngine.EditOrder(newOrderId, order);
             orderEngine.DeleteOrder(newOrderId);
         }
 
@@ -186,7 +197,7 @@ namespace Tests
         [TestMethod]
         public void GetCustomerOrderHistory()
         {
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var actualOrderHistory = orderEngine.GetCustomerOrderHistory("TOMSP");
 
             var expectedOrderHistory = new List<OrderHistoryElement>
@@ -212,7 +223,7 @@ namespace Tests
         [TestMethod]
         public void GetCustomerOrderDetail()
         {
-            var orderEngine = new OrderEngine();
+            var orderEngine = new OrderEngine(ConnectionString, Provider);
             var actualOrderDetails = orderEngine.GetCustomerOrderDetail(10248);
 
             var expectedOrderDetails = new List<OrderDetailElement>

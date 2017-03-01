@@ -1,4 +1,4 @@
-﻿namespace DTO
+﻿namespace DTO.Enums
 {
     public enum OrderStatus
     {
